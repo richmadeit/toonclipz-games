@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Play Looze Cannon's Big Michael Michael. Tap every word on the beat and see how high you can score.">
+<meta property="og:title" content="Big Michael Michael · The Game">
+<meta property="og:description" content="Play Looze Cannon's song. Tap every word on the beat. Beat my score.">
+<meta property="og:image" content="cover.jpg">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0d0a1f">
+<title>Big Michael Michael</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;600;700&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0}
+img{max-width:100%}
+
+/* Layout: one phone-shaped game column, the per-artist "kit" fields stacked under it */
+:root{
+  --night:#0d0a1f; --panel:#18123a; --line:#352a6e; --ink:#f3eefe; --muted:#a99fd0;
+  --pink:#ff3ea5; --gold:#ffc94a; --cyan:#3ef0ff;
+  --display:"Bungee",Impact,"Arial Black",sans-serif;
+  --body:"Chakra Petch",system-ui,sans-serif;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{background:var(--night);color:var(--ink)}
+body{font-family:var(--body);font-size:15px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px}
+.wrap{max-width:420px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header h1{font-family:var(--display);font-weight:400;font-size:clamp(26px,8vw,34px);line-height:1;margin:0;color:var(--gold);text-shadow:0 0 16px rgba(255,62,165,.55);text-wrap:balance}
+header p{margin:6px 0 0;color:var(--muted);font-size:14px}
+.stage{position:relative;width:100%;max-width:100%;aspect-ratio:9/14;border-radius:16px;overflow:hidden;border:1px solid var(--line);touch-action:manipulation;user-select:none;-webkit-user-select:none;box-shadow:0 0 40px rgba(255,62,165,.18)}
+canvas{display:block;width:100%;height:100%}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;background:rgba(10,7,26,.8);backdrop-filter:blur(2px)}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);margin:0}
+.big{font-family:var(--display);font-size:clamp(24px,7.5vw,32px);line-height:1.05;color:var(--ink);text-wrap:balance}
+.overlay p{margin:0;max-width:30ch;color:var(--muted)}
+.tiny{font-size:12px}
+.primary,.ghost{font-family:var(--display);font-size:16px;border-radius:999px;padding:13px 26px;cursor:pointer;text-decoration:none;display:inline-block;border:2px solid var(--pink)}
+.primary{background:var(--pink);color:#1a0412;box-shadow:0 0 22px rgba(255,62,165,.55)}
+.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.primary:focus-visible,.ghost:focus-visible,input:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+.cover{width:132px;height:132px;border-radius:10px;background:linear-gradient(135deg,var(--pink),#6b2bd9 60%,var(--cyan));background-size:cover;background-position:center;display:flex;align-items:flex-end;justify-content:flex-start;padding:8px;font-family:var(--display);font-size:13px;color:#fff;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.score{font-family:var(--display);font-size:40px;color:var(--gold);line-height:1;font-variant-numeric:tabular-nums}
+.artist{font-family:var(--display);font-size:18px;color:var(--ink)}
+.kit{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.kit h2{font-family:var(--display);font-weight:400;font-size:18px;margin:0;color:var(--cyan)}
+.kit > p{margin:-6px 0 0;color:var(--muted);font-size:14px}
+.kit label{display:flex;flex-direction:column;gap:5px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);min-width:0}
+.kit input{font-family:var(--body);font-size:15px;color:var(--ink);background:var(--night);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0;width:100%;box-sizing:border-box;text-transform:none;letter-spacing:0}
+.kit label.check{flex-direction:row;align-items:center;gap:8px}
+.kit label.check input{width:auto}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.how{color:var(--muted);font-size:13px;margin:0}
+.sync{color:var(--muted);font-size:13px}.sync summary{cursor:pointer;color:var(--ink)}.sync p{margin:6px 0}
+.syncl{display:flex;align-items:center;gap:8px}.syncl input{font-family:var(--body);font-size:15px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 9px;width:90px}
+.made{color:var(--muted);font-size:12px;margin:0}.made a,.overlay a:not(.primary){color:var(--cyan)}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.tools .ghost{font-size:13px;padding:9px 16px}
+body.rec header,body.rec .how,body.rec .kit,body.rec #recBtn{display:none}
+body.rec .wrap{max-width:min(420px,calc((100dvh - 70px) * 9 / 14))}
+#exitRec{display:none;background:none;border:0;color:var(--muted);font-family:var(--body);font-size:12px;cursor:pointer;padding:4px;align-self:center}
+body.rec #exitRec{display:block}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Big Michael Michael</h1>
+    <p>Looze Cannon · a song game by ToonClipz</p>
+  </header>
+
+  <div class="stage" id="stage">
+    <canvas id="game" aria-label="Game screen"></canvas>
+    <div class="overlay" id="startOv">
+      <p class="eyebrow">Looze Cannon presents</p>
+      <div class="big">Big Michael<br>Michael</div>
+      <p>Every note is a word Looze raps, and hitting it pops the word. Tap its lane as it crosses the line. Higher notes go right, lower notes go left. The chorus doubles your points.</p>
+      <button class="primary" id="playBtn" type="button">Play</button>
+      <button class="ghost" id="demoBtn" type="button" hidden>Play demo beat</button>
+      <p class="tiny" id="trackLbl">Track: Big Michael Michael</p>
+    </div>
+    <div class="overlay" id="endOv" hidden>
+      <div class="cover" id="cover"></div>
+      <div class="artist" id="endArtist"></div>
+      <p class="eyebrow" id="endTitle"></p>
+      <div class="score" id="endScore">0</div>
+      <p id="endStats"></p>
+      <a class="primary" id="streamBtn" href="https://open.spotify.com" target="_blank" rel="noopener">Stream it now</a>
+      <button class="ghost" id="againBtn" type="button">Run it back</button>
+      <p class="tiny">Want a game for your song? <a href="https://www.instagram.com/toon_clipz_/" target="_blank" rel="noopener">@toon_clipz_</a></p>
+    </div>
+  </div>
+
+  <div class="tools" hidden><button class="ghost" id="recBtn" type="button">Record mode</button></div>
+  <button id="exitRec" type="button">Exit record mode</button>
+  <p class="how">Tap the left, middle or right of the road as each note reaches the rings. On a keyboard, use the left, down and right arrows.</p>
+  <details class="sync"><summary>Notes feel early or late?</summary><p>Raise this number if the notes land after he raps the word, lower it if they land before.</p><label class="syncl" for="syncIn">Timing fix (ms)<input id="syncIn" type="number" value="0" step="20" min="-300" max="300"></label></details>
+  <p class="made">Made by <a href="https://www.instagram.com/toon_clipz_/" target="_blank" rel="noopener">ToonClipz</a>. Want a game for your song? DM @toon_clipz_</p>
+
+  <section class="kit" hidden>
+    <h2>Artist kit</h2>
+    <p>Swap these for each client. The game itself stays the same.</p>
+    <label for="artistIn">Artist name<input id="artistIn" value="Looze Cannon" maxlength="24"></label>
+    <label for="songIn">Song file (mp3 or wav)<input id="songIn" type="file" accept="audio/*"></label>
+    <div class="row">
+      <label for="bpmIn">BPM (uploads only)<input id="bpmIn" type="number" value="92" min="60" max="200"></label>
+      <label for="charIn">Singer art (PNG)<input id="charIn" type="file" accept="image/*"></label>
+    </div>
+    <label for="charOpenIn">Singer art, mouth open (optional)<input id="charOpenIn" type="file" accept="image/*"></label>
+    <label for="promoIn">Promo banner (shows while playing)<input id="promoIn" value="" placeholder="Get your own song game · $99 · DM @toon_clipz_"></label>
+    <label for="cleanIn" class="check"><input id="cleanIn" type="checkbox" checked> Clean lyrics on screen</label>
+    <label for="linkIn">Stream link<input id="linkIn" value="https://open.spotify.com/search/Big%20Michael%20Michael%20Looze%20Cannon"></label>
+  </section>
+</div>
+
+<script>
+const W=360,H=560,HOR=170,HIT=478,LEAD=1.5;
+const $=id=>document.getElementById(id);
+const cv=$('game'),cx=cv.getContext('2d');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+(function fit(){const d=Math.min(window.devicePixelRatio||1,2);cv.width=W*d;cv.height=H*d;cx.setTransform(d,0,0,d,0,0)})();
+
+const PRESET={title:'Big Michael Michael',artist:'Looze Cannon',src:'big-michael-michael.mp3',cover:'cover.jpg',singer:'looze-closed.png',singerOpen:'looze-open.png',
+  hooks:[[13,43.5],[105.3,160]],
+  notes:[[1.22,2,0,"Oh"],[1.74,0,0,"my"],[1.98,1,0,"goodness"],[2.68,0,0,"I love"],[3.14,0,0,"it"],[4.74,2,0,"Hydro"],[5.06,2,0,"boy Oh"],[5.7,2,0.74,"the biggest"],[8.84,1,0,"Hold on"],[9.34,2,0,"let me"],[9.56,1,0,"talk"],[9.78,0,0,"my"],[9.98,0,0,"talk"],[10.28,0,0,"Hold on"],[13.2,2,0,"Pull"],[13.4,2,0,"up on"],[13.68,2,0,"a opp"],[14.36,1,0,"pull his"],[14.7,2,0,"big"],[14.96,2,0,"card"],[15.9,1,0,"Ooh"],[16.34,2,0,"I like"],[16.84,1,0,"Chevys"],[17.52,0,0,"I like"],[17.88,1,0,"big"],[18.14,0,0,"cars"],[19.16,0,0,"My"],[19.38,2,0,"boy"],[19.68,1,0,"right here"],[20.12,2,0,"dressed"],[20.4,1,0,"like he"],[20.7,2,0,"work at"],[21.06,1,0,"the Waffle"],[21.58,0,0,"House"],[22.26,2,0,"I'm pulling"],[22.82,1,0,"up"],[23.06,0,0,"five"],[23.44,2,0,"deep"],[23.68,2,0,"finna"],[23.96,1,0,"take"],[24.2,0,0,"the waffle"],[24.76,0,0,"out"],[25.32,1,0,"And"],[25.62,2,0,"every"],[25.86,1,0,"time they"],[26.32,2,0,"see me"],[26.66,1,0,"boy they"],[27.08,2,0,"know that"],[27.46,0,0,"I am"],[27.78,0,0,"clout"],[28.44,2,0.66,"I moonwalk"],[29.16,2,0,"in the"],[29.4,1,0,"city"],[29.72,0,0,"yeah they"],[30.12,1,0,"call me"],[30.54,0,0,"Big"],[31.32,2,0,"Big"],[32.1,2,0,"Big"],[32.86,2,0,"Big"],[33.18,0,0,"Michael"],[33.58,0,0,"Michael"],[34.36,2,0,"She gon"],[34.76,1,0,"ride me"],[35.12,0,0,"like"],[35.4,0,0,"a"],[35.92,1,0,"like"],[36.14,0,0.9,"a motorcycle"],[37.44,1,0,"She"],[37.64,0,0,"told"],[37.84,2,0,"me that"],[38.18,2,0,"she"],[38.38,1,0,"gon"],[38.6,2,0,"read me"],[38.98,1,0,"but"],[39.18,2,0,"I'm not"],[39.58,1,0,"the Bible"],[40.62,0,0,"Oh"],[40.86,0,0,"geez"],[41.1,0,0,"Louise"],[42.12,1,0,"yeah I"],[42.44,2,0,"got"],[42.64,1,0,"the title"],[43.62,0,0,"Yeah I"],[43.98,2,0,"make"],[44.18,0,0,"her"],[44.42,1,0,"jump"],[44.72,2,0,"just"],[44.92,1,0,"like Kris"],[45.42,2,0,"Kross"],[46.02,1,0,"I'm a"],[46.32,2,0,"big"],[46.56,0,0,"boss"],[47.12,1,0,"sipping"],[47.44,0,0,"water"],[47.76,1,0,"mm"],[48.28,2,0,"good"],[48.52,2,0,"Voss"],[49.04,1,0,"Yeah I"],[49.38,2,0,"came"],[49.66,1,0,"through"],[50.24,0,0,"All I"],[50.58,1,0,"know"],[50.78,2,0,"is how"],[51.08,0,0,"to get"],[51.5,1,0,"cheddar"],[51.92,1,0,"I know"],[52.26,0,0,"my"],[52.52,2,0,"ABCs"],[53.08,1,0,"but I"],[53.46,0,0,"don't know"],[53.8,0,0,"the"],[54.02,2,0,"rest"],[54.28,1,0,"of them"],[54.6,0,0,"letters"],[55.16,0,0,"It go"],[55.64,0,0,"A"],[55.96,0,0,"B"],[56.28,2,0,"C"],[56.72,2,0,"D"],[57.18,2,0,"E"],[57.66,1,0,"F"],[57.86,2,0,"G"],[58.26,1,0,"I need"],[58.84,0,1.5,"M-O-N-E-Y"],[60.62,0,0,"on"],[60.92,0,0,"me"],[61.28,0,0,"She gon"],[61.72,2,0,"do"],[62.08,2,0,"what"],[62.3,2,0,"I want"],[62.9,1,0,"if she"],[63.24,0,0,"really"],[63.6,0,0,"want"],[63.98,0,0,"me"],[64.42,0,0,"I'ma"],[64.76,2,0,"ball"],[65.2,2,0,"in the"],[65.48,2,0,"club"],[65.9,2,0,"now they"],[66.28,1,0,"call me"],[66.66,0,0,"Kobe"],[67.48,1,0,"I'm so"],[67.84,1,0,"fucking"],[68.2,0,0,"fresh"],[70.7,0,0,"Try to"],[70.9,1,0,"rap fast"],[71.32,2,0,"again"],[72.24,2,0,"Excuse"],[72.64,1,0,"me with"],[72.92,0,0,"my"],[73.14,1,0,"Black"],[73.44,0,0,"ass"],[73.76,2,0,"I'm still"],[74.24,1,0,"trapping"],[74.58,0,0,"damn"],[75.18,0,0,"Eating"],[75.48,2,0,"lobster"],[75.9,1,0,"with a"],[76.12,2,0,"bunch"],[76.36,1,0,"of spam"],[76.84,0,0,"Oh"],[77.12,2,0,"ouch"],[77.56,0,0,"Oh"],[78.12,1,0,"ooh"],[78.36,2,0,"excuse"],[78.8,1,0,"me goddamn"],[79.82,2,0,"I pulled"],[80.22,2,0,"up in"],[80.46,0,0,"the"],[80.68,0,0,"city"],[81.32,0,0,"tryna"],[81.68,2,0,"see some"],[82.06,1,0,"big"],[82.28,2,0,"bitties"],[82.88,0,0,"Oh"],[83.44,2,0,"oh we"],[83.7,1,0,"in Atlanta"],[84.32,2,0,"oh let's"],[84.72,2,0,"go Magic"],[85.32,1,0,"City"],[85.9,0,0,"Oh"],[86.46,1,0,"no we"],[86.76,0,0,"in Detroit"],[87.4,1,0,"oh let's"],[87.8,2,0,"go"],[88.02,1,0,"to the"],[88.32,2,0.74,"Pantheon"],[89.56,1,0,"Oh"],[89.92,0,0,"no no"],[90.28,0,0,"wait"],[90.68,2,0,"let's let's"],[91.06,1,0,"see what"],[91.42,2,0.64,"Pantheon"],[92.14,1,0,"Ooh that's"],[92.46,0,0,"a double"],[92.82,0,0,"entendre"],[93.62,2,0,"Dripping"],[93.96,1,0,"sauce"],[94.2,0,0.74,"like spaghetti"],[95.22,0,0,"Oh"],[96.0,2,0,"oh"],[96.68,1,0,"I got"],[97.0,2,0,"cheese"],[97.28,1,0,"hot"],[97.5,0,0,"and ready"],[98.28,0,0,"Oh"],[99.02,2,0,"yes"],[99.7,2,0,"throw"],[99.9,2,0,"this"],[100.18,1,0,"money"],[100.42,1,0,"like"],[100.62,0,0.76,"confetti"],[102.0,1,0,"Yes"],[102.32,0,0.62,"I'm humble"],[103.62,0,0,"but I'm"],[103.98,1,0,"petty"],[105.54,2,0,"Pull up"],[105.88,2,0,"on a"],[106.18,2,0,"opp"],[106.68,1,0,"pull his"],[107.04,2,0,"big"],[107.3,2,0,"card"],[108.2,1,0,"Ooh"],[108.7,2,0,"I like"],[109.16,1,0,"Chevys"],[109.84,0,0,"I like"],[110.2,1,0,"big"],[110.46,0,0,"cars"],[111.5,0,0,"My"],[111.7,2,0,"boy"],[112.0,1,0,"right here"],[112.44,2,0,"dressed"],[112.72,1,0,"like he"],[113.02,2,0,"work"],[113.26,0,0,"at the"],[113.52,1,0,"Waffle"],[113.92,0,0,"House"],[114.6,2,0,"I'm pulling"],[115.14,1,0,"up"],[115.38,0,0,"five"],[115.76,2,0,"deep"],[116.0,2,0,"finna"],[116.28,1,0,"take"],[116.52,0,0,"the waffle"],[117.14,0,0,"out"],[117.64,1,0,"And"],[117.94,2,0,"every"],[118.2,1,0,"time"],[118.4,2,0,"they"],[118.64,2,0,"see me"],[118.98,1,0,"boy"],[119.18,0,0,"they"],[119.4,1,0,"know that"],[119.78,0,0,"I am"],[120.1,2,0,"clout"],[120.76,2,0.68,"I moonwalk"],[121.48,2,0,"in the"],[121.74,1,0,"city"],[122.06,0,0,"yeah they"],[122.44,1,0,"call"],[122.66,2,0,"me"],[122.86,1,0,"Big"],[123.64,2,0,"Big"],[124.42,2,0,"Big"],[125.2,2,0,"Big"],[125.5,1,0,"Michael"],[125.9,0,0,"Michael"],[126.7,2,0,"She gon"],[127.08,1,0,"ride me"],[127.46,0,0,"like"],[127.74,0,0,"a"],[128.24,2,0,"like"],[128.46,0,0.9,"a motorcycle"],[129.759,1,0,"She"],[129.96,2,0,"told me"],[130.34,2,0,"that she"],[130.699,1,0,"gon"],[130.919,2,0,"read me"],[131.3,1,0,"but I'm"],[131.7,2,0,"not"],[131.9,1,0,"the Bible"],[132.94,0,0,"Oh"],[133.18,2,0,"geez"],[133.42,0,0,"Louise"],[134.44,0,0,"yeah I"],[134.76,1,0,"got"],[134.96,2,0,"the title"],[135.58,1,0,"Big"],[135.86,0,0,"Michael"],[136.72,1,0,"big"],[137.08,1,0.68,"Michael"],[137.84,0,0,"Michael"],[138.6,0,1.08,"Michael"],[139.74,2,0,"Big"],[140.16,1,0,"Michael"],[140.78,0,0,"big Michael Michael"],[141.3,0,1.5,"Michael"],[142.86,1,0,"Big"],[143.22,1,0.62,"Michael"],[143.86,0,0,"big Michael Michael"],[145.74,1,0,"Michael Big"],[146.32,1,1.5,"Michael"],[149.02,1,0,"big"],[149.4,0,0.68,"Michael"],[150.16,0,0,"Michael"],[150.5,1,0,"Michael Big"],[150.94,2,0.62,"Michael"],[151.7,1,0,"big Michael Michael"],[151.9,2,0,"Michael Big"],[152.48,1,0.6,"Michael"],[153.1,0,0,"big Michael"],[153.38,2,0,"Big"],[153.6,2,0,"Looze"],[155.18,1,0,"Big"],[155.56,2,0,"Michael"],[156.72,0,0,"big"],[157.1,0,0,"Michael"],[157.74,0,0,"big"],[158.08,2,0,"Michael big"],[158.62,0,1.5,"Michael"],[161.24,2,0,"Street"],[161.68,2,0.76,"noise"],[164.4,1,0,"Looze"],[164.8,0,0,"Cannon"],[168.92,1,1.5,"Ooh"],[171.94,2,0,"ooh Damn"]], /* [time, lane by pitch, hold length, word] from the lyric timings + isolated vocal */ /* chorus windows, seconds into the track */
+  beats:[0.557,0.952,1.347,1.718,2.113,2.508,2.879,3.274,3.646,4.04,4.412,4.807,5.201,5.573,5.968,6.339,6.734,7.105,7.5,7.872,8.266,8.638,9.033,9.404,9.799,10.194,10.565,10.96,11.331,11.726,12.098,12.492,12.887,13.282,13.653,14.048,14.42,14.791,15.186,15.581,15.952,16.347,16.742,17.136,17.508,17.879,18.251,18.646,19.04,19.435,19.807,20.178,20.573,20.968,21.339,21.734,22.105,22.5,22.895,23.266,23.661,24.033,24.404,24.799,25.194,25.588,25.96,26.331,26.726,27.121,27.492,27.887,28.259,28.653,29.048,29.443,29.814,30.209,30.581,30.952,31.347,31.742,32.113,32.508,32.879,33.274,33.646,34.04,34.412,34.807,35.178,35.573,35.944,36.339,36.734,37.105,37.5,37.895,38.266,38.638,39.033,39.427,39.799,40.194,40.565,40.937,41.308,41.703,42.098,42.469,42.864,43.259,43.654,44.048,44.42,44.791,45.163,45.558,45.952,46.347,46.742,47.113,47.485,47.88,48.274,48.669,49.041,49.412,49.807,50.202,50.573,50.945,51.339,51.734,52.129,52.5,52.895,53.267,53.661,54.056,54.428,54.799,55.194,55.565,55.96,56.355,56.726,57.121,57.493,57.864,58.259,58.654,59.025,59.42,59.815,60.186,60.581,60.952,61.324,61.719,62.113,62.508,62.88,63.274,63.646,64.041,64.412,64.807,65.202,65.573,65.945,66.339,66.734,67.106,67.5,67.872,68.267,68.661,69.033,69.404,69.799,70.194,70.565,70.96,71.332,71.726,72.098,72.493,72.887,73.282,73.654,74.025,74.42,74.815,75.186,75.558,75.952,76.347,76.719,77.113,77.508,77.88,78.274,78.646,79.041,79.412,79.784,80.179,80.573,80.968,81.34,81.734,82.106,82.5,82.872,83.267,83.638,84.033,84.428,84.799,85.194,85.589,85.96,86.355,86.727,87.098,87.493,87.864,88.259,88.654,89.025,89.42,89.792,90.186,90.581,90.953,91.347,91.742,92.114,92.485,92.88,93.275,93.646,94.018,94.412,94.807,95.179,95.573,95.968,96.34,96.734,97.106,97.501,97.895,98.267,98.662,99.033,99.428,99.799,100.194,100.566,100.96,101.332,101.727,102.098,102.493,102.888,103.259,103.654,104.025,104.42,104.792,105.186,105.581,105.953,106.347,106.719,107.09,107.485,107.88,108.275,108.669,109.041,109.436,109.807,110.179,110.573,110.968,111.34,111.734,112.106,112.477,112.872,113.244,113.638,114.033,114.428,114.823,115.194,115.589,115.96,116.332,116.727,117.121,117.493,117.888,118.259,118.631,119.025,119.42,119.815,120.186,120.558,120.953,121.347,121.742,122.114,122.485,122.88,123.275,123.669,124.041,124.413,124.807,125.202,125.574,125.945,126.34,126.711,127.106,127.501,127.872,128.267,128.662,129.033,129.428,129.823,130.194,130.589,130.961,131.332,131.727,132.098,132.493,132.888,133.259,133.631,134.026,134.42,134.792,135.187,135.581,135.953,136.348,136.719,137.114,137.485,137.88,138.252,138.646,139.041,139.413,139.807,140.179,140.574,140.968,141.34,141.735,142.106,142.501,142.896,143.267,143.639,144.033,144.405,144.8,145.194,145.566,145.961,146.332,146.727,147.122,147.493,147.888,148.259,148.654,149.026,149.42,149.792,150.187,150.558,150.953,151.348,151.719,152.114,152.509,152.88,153.275,153.646,154.041,154.436,154.807,155.202,155.574,155.945,156.34,156.735,157.106,157.501,157.896,158.267,158.662,159.033,159.428,159.8,160.194,160.566,160.961,161.332,161.727,162.099,162.493,162.865,163.26,163.654,164.026,164.42,164.792,165.187,165.581,165.953,166.348,166.719,167.114,167.509,167.88,168.252,168.647,169.041,169.413,169.808,170.202,170.574,170.945,171.34,171.735,172.106]};
+let ac=null,demoBuf=null,userBuf=null,presetBuf=null,mode='preset',src=null,startAt=0,spb=60/92,dur=0,state='idle',beatT=[],hooks=[];
+const inHook=t=>hooks.some(([a,b])=>t>=a&&t<b);
+function grid(){beatT=[];for(let k=0;k*spb<dur;k++)beatT.push(k*spb);hooks=[];for(let k=16;k*spb<dur;k+=32)hooks.push([k*spb,(k+16)*spb])}
+function beatPos(t){const B=beatT;if(!B.length||t<B[0])return t/spb;let lo=0,hi=B.length-1;if(t>=B[hi])return hi+(t-B[hi])/spb;while(hi-lo>1){const m=(lo+hi)>>1;if(B[m]<=t)lo=m;else hi=m}return lo+(t-B[lo])/(B[lo+1]-B[lo])}
+let chart=[],lane=1,px=W/2,score=0,combo=0,bestCombo=0,grabbed=0,pops=[],charImg=null,charURL='',flash=0,lastHook=false,hookFlash=0;
+const getAC=()=>ac||(ac=new (window.AudioContext||window.webkitAudioContext)());
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+/* ---------- built-in demo beat, synthesized so the mock works with no upload ---------- */
+async function renderDemo(){
+  const s=60/92,beats=64,sr=44100,len=beats*s+1.2;
+  const oc=new OfflineAudioContext(1,Math.ceil(len*sr),sr);
+  const nb=oc.createBuffer(1,sr,sr),nd=nb.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
+  const out=oc.createGain();out.gain.value=.75;out.connect(oc.destination);
+  const env=(g,t,a,d)=>{g.gain.setValueAtTime(a,t);g.gain.exponentialRampToValueAtTime(.001,t+d)};
+  const kick=t=>{const o=oc.createOscillator(),g=oc.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(42,t+.13);env(g,t,1,.4);o.connect(g).connect(out);o.start(t);o.stop(t+.45)};
+  const noise=(t,f,a,d)=>{const n=oc.createBufferSource();n.buffer=nb;const fl=oc.createBiquadFilter();fl.type='highpass';fl.frequency.value=f;const g=oc.createGain();env(g,t,a,d);n.connect(fl).connect(g).connect(out);n.start(t);n.stop(t+d+.02)};
+  const snare=t=>{noise(t,1800,.55,.2);const o=oc.createOscillator(),g=oc.createGain();o.frequency.value=185;env(g,t,.35,.09);o.connect(g).connect(out);o.start(t);o.stop(t+.1)};
+  const tone=(t,f,type,peak,d,glide)=>{const o=oc.createOscillator(),g=oc.createGain();o.type=type;o.frequency.setValueAtTime(glide?f*1.5:f,t);if(glide)o.frequency.exponentialRampToValueAtTime(f,t+.06);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+.015);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(out);o.start(t);o.stop(t+d+.05)};
+  const prog=[[55,[220,261.6,329.6]],[43.65,[174.6,220,261.6]],[65.41,[196,261.6,329.6]],[49,[196,246.9,293.7]]];
+  for(let b=0;b<beats;b++){
+    const t=b*s,bb=b%4,bar=Math.floor(b/4),hook=Math.floor(b/16)%2===1;
+    if(bb===0){const[bf,ch]=prog[bar%4];tone(t,bf,'sine',.7,s*2.6,true);ch.forEach(f=>tone(t,f,'triangle',.05,s*3.5))}
+    if(bb===0||bb===2)kick(t);
+    if(bb===2&&bar%2)kick(t+s*.5);
+    if(bb===1||bb===3)snare(t);
+    const hs=hook?4:2;for(let h=0;h<hs;h++)noise(t+h*s/hs,7000,h?0.09:0.18,.05);
+  }
+  return oc.startRendering();
+}
+const demoPromise=Promise.resolve(null);
+
+/* ---------- city backdrop ---------- */
+const city=[[], []];
+for(let layer=0;layer<2;layer++){let x=-10;while(x<W){const w=24+Math.random()*36,h=(layer?50:80)+Math.random()*(layer?50:70),win=[];
+  for(let wy=8;wy<h-6;wy+=10)for(let wx=5;wx<w-6;wx+=8)if(Math.random()<.45)win.push({x:wx,y:wy,f:Math.random()<.25});
+  city[layer].push({x,w,h,win});x+=w+(layer?3:6)}}
+
+const rw=d=>30+140*d, laneX=(l,d)=>W/2+(l-1)*rw(d)*2/3, depth=p=>p*p;
+
+/* ---------- chart: items land exactly on beats ---------- */
+function buildChart(){
+  chart=[];
+  if(mode==='preset'){for(const[time,l,hold,w]of PRESET.notes)chart.push({time,lane:l,hold,done:false,hit:false,w});return}
+  for(let b=4;b<beatT.length-1;b++){const bt=beatT[b],nx=beatT[b+1];if(bt>dur-.4)break;const hook=inHook(bt);
+    for(const st of hook?[0,.5]:[0]){
+      if(st?Math.random()<.5:Math.random()<.15)continue;
+      chart.push({time:bt+st*(nx-bt),lane:Math.floor(Math.random()*3),hold:0,done:false,hit:false,w:''});
+    }}
+}
+
+function update(t){
+  const hook=inHook(t);
+  if(hook&&!lastHook)hookFlash=1;lastHook=hook;
+  for(const it of chart){if(it.done||it.time>t-WIN)continue;it.done=true;combo=0;missed++;pops.push({x:laneX(it.lane,1),y:HIT-30,txt:'MISS',c:'#8c7fc0',a:0})}
+}
+const WIN=.15,LANEC=['#ff3ea5','#ffc94a','#3ef0ff'];let missed=0,padFlash=[0,0,0];
+function tapLane(l){
+  lane=l;padFlash[l]=1;const t=clock+offset();let best=null;
+  for(const it of chart){if(it.done||it.lane!==l)continue;const e=Math.abs(it.time-t);if(e<=WIN&&(!best||e<Math.abs(best.time-t)))best=it;if(it.time>t+WIN)break}
+  if(!best)return;best.done=best.hit=true;
+  const e=Math.abs(best.time-t),perfect=e<.06,hook=inHook(t),x=laneX(l,1);
+  burst(x,HIT,LANEC[l],perfect?18:10);if(perfect)shake=.12;
+  combo++;bestCombo=Math.max(bestCombo,combo);grabbed++;
+  const pts=(perfect?150:100)*(hook?2:1)+Math.min(combo,20)*5;score+=pts;
+  pops.push({x,y:HIT-60,txt:shown(best.w)||(perfect?'PERFECT':'GOOD'),c:hook?'#3ef0ff':LANEC[l],a:0,big:!!best.w});
+  pops.push({x,y:HIT-34,txt:'+'+pts,c:'#f3eefe',a:0,small:true});
+}
+const offset=()=>(+$('syncIn').value||0)/1000;
+const BLEEP=/^(fuck\w*|bitch\w*|bitties|ass|goddamn|damn|shit\w*|nigga\w*)$/i;
+const shown=w=>w&&$('cleanIn').checked?w.split(' ').map(x=>BLEEP.test(x)?x[0]+'*'.repeat(Math.max(2,x.length-1)):x).join(' '):w;
+let parts=[],shake=0,singIdx=0,lines=[],charClip=false,charImgOpen=null,charOpenClip=false;
+function burst(x,y,c,n){if(reduce)return;for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,v=70+Math.random()*170;parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-110,l:.55+Math.random()*.25,c})}}
+function buildLines(){lines=[];let cur=null;chart.forEach((it,i)=>{if(!it.w)return;if(!cur||it.time-chart[i-1].time>1||cur.idx.length>=6){cur={start:it.time,idx:[]};lines.push(cur)}cur.idx.push(i)})}
+/* how wide the singer's mouth is open right now, driven by the lyric word timings */
+function singAmt(t){if(!chart.length)return 0;
+  while(singIdx<chart.length-1&&chart[singIdx+1].time<=t)singIdx++;
+  while(singIdx>0&&chart[singIdx].time>t)singIdx--;
+  const it=chart[singIdx];if(it.time>t)return 0;
+  const nx=chart[singIdx+1]?chart[singIdx+1].time:it.time+1,len=Math.max(it.hold||0,Math.min(nx-it.time,.32)),e=t-it.time;
+  if(e>len)return 0;return it.hold?.55+.45*Math.abs(Math.sin(e*9)):Math.sin(Math.min(1,e/len)*Math.PI)}
+function drawSinger(t,live,frac){
+  const s=live?singAmt(t):(reduce?0:Math.max(0,Math.sin(t*5))*.5),x=W/2,base=HOR+6,bob=reduce?0:Math.abs(Math.sin(Math.PI*frac))*4;
+  const g=cx.createRadialGradient(x,base-55,4,x,base-55,95);g.addColorStop(0,`rgba(255,201,74,${.16+s*.24})`);g.addColorStop(1,'rgba(255,201,74,0)');
+  cx.fillStyle=g;cx.beginPath();cx.arc(x,base-55,95,0,7);cx.fill();
+  if(s>.05&&!reduce){cx.lineWidth=2.5;for(let i=0;i<3;i++){const ph=(t*2.2+i/3)%1;
+    cx.strokeStyle=`rgba(62,240,255,${s*(1-ph)})`;cx.beginPath();cx.arc(x+20,base-86-bob,12+ph*36,-.6,.6);cx.stroke();
+    cx.strokeStyle=`rgba(255,62,165,${s*(1-ph)})`;cx.beginPath();cx.arc(x-20,base-86-bob,12+ph*36,Math.PI-.6,Math.PI+.6);cx.stroke()}}
+  cx.save();cx.translate(x,base-bob);
+  if(charImg){const open=charImgOpen&&s>.3,im=open?charImgOpen:charImg,clip=open?charOpenClip:charClip;
+    if(!charImgOpen)cx.scale(1-s*.02,1+s*.05);   /* one image: squash-and-stretch; two images: real mouth swap */
+    if(clip){const sz=120,k=Math.max(sz/im.width,sz/im.height);cx.save();cx.beginPath();cx.arc(0,-sz/2,sz/2,0,7);cx.clip();
+      cx.drawImage(im,-im.width*k/2,-sz/2-im.height*k/2,im.width*k,im.height*k);cx.restore();
+      cx.lineWidth=4;cx.strokeStyle='#ff3ea5';cx.shadowColor='#ff3ea5';cx.shadowBlur=14;cx.beginPath();cx.arc(0,-sz/2,sz/2,0,7);cx.stroke();cx.shadowBlur=0}
+    else{const k=Math.min(158/im.height,170/im.width),iw=im.width*k,ih=im.height*k;cx.drawImage(im,-iw/2,-ih,iw,ih)}
+    cx.restore();return}
+  cx.fillStyle='#1d1640';cx.fillRect(-12,-36,9,32);cx.fillRect(3,-36,9,32);                       // legs
+  cx.fillStyle='#fff';cx.fillRect(-15,-6,13,6);cx.fillRect(2,-6,13,6);                            // kicks
+  cx.lineCap='round';cx.lineWidth=7;cx.strokeStyle='#ff3ea5';const up=s*18;                       // free arm lifts on big notes
+  cx.beginPath();cx.moveTo(-17,-70);cx.lineTo(-30,-52-up);cx.stroke();
+  cx.fillStyle='#ff3ea5';cx.beginPath();cx.roundRect(-21,-78,42,46,10);cx.fill();                 // jacket
+  cx.strokeStyle='#ffc94a';cx.lineWidth=3;cx.beginPath();cx.arc(0,-76,12,.15*Math.PI,.85*Math.PI);cx.stroke();
+  cx.fillStyle='#ffc94a';cx.beginPath();cx.arc(0,-64,3.5,0,7);cx.fill();
+  cx.lineWidth=7;cx.strokeStyle='#ff3ea5';cx.beginPath();cx.moveTo(17,-70);cx.lineTo(16,-84);cx.stroke(); // mic arm
+  cx.save();cx.translate(0,-80);cx.rotate(-s*.1);
+  cx.fillStyle='#8a5a3c';cx.beginPath();cx.arc(0,-17,18,0,7);cx.fill();                           // head
+  cx.fillStyle='#0b0b12';cx.fillRect(-13,-22,26,6);cx.fillStyle='rgba(62,240,255,.6)';cx.fillRect(-10,-21,6,2);
+  cx.fillStyle='#3ef0ff';cx.beginPath();cx.arc(0,-21,18,Math.PI,0);cx.fill();cx.fillRect(-23,-22,16,4); // cap
+  cx.fillStyle='#2a0a14';cx.beginPath();cx.ellipse(0,-7,5+s,1+s*5,0,0,7);cx.fill();               // mouth
+  cx.restore();
+  cx.strokeStyle='#555a6e';cx.lineWidth=4;cx.beginPath();cx.moveTo(15,-82);cx.lineTo(11,-90);cx.stroke(); // mic
+  cx.fillStyle='#2b2b36';cx.beginPath();cx.arc(10,-93,6,0,7);cx.fill();cx.fillStyle='#9aa0b8';cx.beginPath();cx.arc(8,-95,2,0,7);cx.fill();
+  cx.restore()}
+function drawLyrics(t){if(!lines.length)return;let li=-1;for(let i=0;i<lines.length;i++){if(lines[i].start-.7<=t)li=i;else break}
+  if(li<0)return;const L=lines[li],words=L.idx.map(i=>chart[i]),last=words[words.length-1];if(t>last.time+(last.hold||0)+2.2)return;
+  let fs=16,sp=6,f=()=>`700 ${fs}px "Chakra Petch", sans-serif`;cx.font=f();
+  const tw0=()=>words.reduce((a,it)=>a+cx.measureText(shown(it.w)).width,0)+sp*(words.length-1);let tw=tw0();
+  if(tw>W-44){fs=Math.max(11,Math.floor(fs*(W-44)/tw));cx.font=f();tw=tw0()}
+  const y=H-24;cx.fillStyle='rgba(10,7,32,.75)';cx.beginPath();cx.roundRect(W/2-tw/2-12,y-15,tw+24,30,10);cx.fill();
+  let x=W/2-tw/2;cx.textAlign='left';cx.textBaseline='middle';
+  for(const it of words){const sw=shown(it.w),w=cx.measureText(sw).width;cx.fillStyle=it.hit?'#ffc94a':it.done?'#6c6390':t>=it.time?'#f3eefe':'rgba(243,238,254,.5)';
+    cx.fillText(sw,x,y);if(!it.done&&t>=it.time-.05){cx.fillStyle='#ff3ea5';cx.fillRect(x,y+9,w,2)}x+=w+sp}
+  cx.textAlign='center'}
+
+/* ---------- drawing ---------- */
+function drawChar(x,y){
+  cx.fillStyle='rgba(0,0,0,.45)';cx.beginPath();cx.ellipse(x,HIT+20,26,7,0,0,7);cx.fill();
+  if(charImg){
+    cx.save();cx.beginPath();cx.arc(x,y-24,30,0,7);cx.clip();
+    const s=Math.max(60/charImg.width,60/charImg.height);cx.drawImage(charImg,x-charImg.width*s/2,y-24-charImg.height*s/2,charImg.width*s,charImg.height*s);cx.restore();
+    cx.lineWidth=4;cx.strokeStyle='#ff3ea5';cx.shadowColor='#ff3ea5';cx.shadowBlur=14;cx.beginPath();cx.arc(x,y-24,30,0,7);cx.stroke();cx.shadowBlur=0;return;
+  }
+  cx.fillStyle='#1d1640';cx.fillRect(x-13,y+2,10,16);cx.fillRect(x+3,y+2,10,16);           // legs
+  cx.fillStyle='#fff';cx.fillRect(x-15,y+15,13,6);cx.fillRect(x+2,y+15,13,6);              // kicks
+  cx.fillStyle='#ff3ea5';cx.beginPath();cx.roundRect(x-19,y-30,38,34,10);cx.fill();       // hoodie
+  cx.strokeStyle='#ffc94a';cx.lineWidth=3;cx.beginPath();cx.arc(x,y-28,11,.15*Math.PI,.85*Math.PI);cx.stroke(); // chain
+  cx.fillStyle='#ffc94a';cx.beginPath();cx.arc(x,y-17,3.5,0,7);cx.fill();
+  cx.fillStyle='#8a5a3c';cx.beginPath();cx.arc(x,y-44,15,0,7);cx.fill();                  // head
+  cx.fillStyle='#0b0b12';cx.fillRect(x-12,y-49,24,6);                                       // shades
+  cx.fillStyle='#3ef0ff';cx.beginPath();cx.arc(x,y-52,15,Math.PI,0);cx.fill();cx.fillRect(x-3,y-58,22,5); // cap
+}
+
+function draw(t,live,dt){
+  cx.fillStyle='#0a0720';cx.fillRect(-6,-6,W+12,H+12);cx.save();if(shake>0&&!reduce){cx.translate((Math.random()-.5)*5,(Math.random()-.5)*5);shake-=dt}
+  const fire=live&&combo>=15;
+  const beat=live?beatPos(t):t/spb,frac=((beat%1)+1)%1,pulse=reduce?0:Math.pow(1-frac,3),hook=live&&inHook(t);
+  const sky=cx.createLinearGradient(0,0,0,HOR);sky.addColorStop(0,'#07051a');sky.addColorStop(1,hook?'#6a1658':'#2a1a5e');
+  cx.fillStyle=sky;cx.fillRect(0,0,W,HOR);
+  cx.fillStyle=hook?'rgba(255,62,165,.9)':'rgba(255,201,74,.85)';cx.beginPath();cx.arc(W/2,HOR-18,46+pulse*4,Math.PI,0);cx.fill();
+  city.forEach((L,i)=>{for(const b of L){cx.fillStyle=i?'#120c2c':'#1d1546';cx.fillRect(b.x,HOR-b.h,b.w,b.h);
+    for(const w of b.win){const on=w.f?(Math.floor(beat)%2===0):true;if(!on)continue;cx.fillStyle=i?'rgba(255,201,74,.75)':'rgba(62,240,255,.35)';cx.fillRect(b.x+w.x,HOR-b.h+w.y,3,4)}}});
+  cx.fillStyle='#0a0720';cx.fillRect(0,HOR,W,H-HOR);
+  // road
+  const db=(H-HOR)/(HIT-HOR);
+  cx.fillStyle='#151033';cx.beginPath();cx.moveTo(W/2-rw(0),HOR);cx.lineTo(W/2+rw(0),HOR);cx.lineTo(W/2+rw(db),H);cx.lineTo(W/2-rw(db),H);cx.fill();
+  cx.lineWidth=fire?5:3;cx.strokeStyle=fire?'#ffc94a':hook?'#3ef0ff':'#ff3ea5';cx.shadowColor=cx.strokeStyle;cx.shadowBlur=12;
+  [-1,1].forEach(sg=>{cx.beginPath();cx.moveTo(W/2+sg*rw(0),HOR);cx.lineTo(W/2+sg*rw(db),H);cx.stroke()});cx.shadowBlur=0;
+  cx.lineWidth=1.5;cx.strokeStyle='rgba(62,240,255,.3)';
+  [-1,1].forEach(sg=>{cx.beginPath();cx.moveTo(W/2+sg*rw(0)/3,HOR);cx.lineTo(W/2+sg*rw(db)/3,H);cx.stroke()});
+  // beat lines rolling toward the player, one per beat
+  for(let k=Math.floor(beat)-1;k<=beat+LEAD/spb+2;k++){const bk=live&&beatT[k]!=null?beatT[k]:k*spb;const p=1-(bk-t)/LEAD;if(p<0||p>1.28)continue;const d=depth(p),y=HOR+d*(HIT-HOR);
+    cx.strokeStyle=k%4===0?'rgba(255,62,165,.85)':'rgba(62,240,255,.28)';cx.lineWidth=.5+2.5*d;cx.beginPath();cx.moveTo(W/2-rw(d),y);cx.lineTo(W/2+rw(d),y);cx.stroke()}
+  drawSinger(t,live,frac);
+  // hit pads
+  for(let l=0;l<3;l++){padFlash[l]=Math.max(0,padFlash[l]-dt*5);cx.strokeStyle=LANEC[l];cx.globalAlpha=.45+padFlash[l]*.55;cx.lineWidth=2+padFlash[l]*3;cx.beginPath();cx.ellipse(laneX(l,1),HIT,30+padFlash[l]*8,9+padFlash[l]*3,0,0,7);cx.stroke();if(padFlash[l]>0){cx.fillStyle=LANEC[l];cx.globalAlpha=padFlash[l]*.35;cx.fill()}cx.globalAlpha=1}
+  // items
+  cx.textAlign='center';cx.textBaseline='middle';
+  if(live)for(const it of chart){if(it.hit&&!it.hold)continue;const p=1-(it.time-t)/LEAD;if(p<0&&!(it.hold&&1-(it.time+it.hold-t)/LEAD<1))continue;if(p>1.3&&!it.hold)continue;
+    const col=LANEC[it.lane];
+    if(it.hold){const pe=Math.max(0,1-(it.time+it.hold-t)/LEAD),ps=Math.min(1,p);if(pe<1&&ps>0){const d1=depth(Math.max(0,ps)),d2=depth(pe);
+      cx.strokeStyle=col;cx.globalAlpha=it.hit?.9:.45;cx.lineCap='round';cx.lineWidth=3+8*d1;cx.beginPath();cx.moveTo(laneX(it.lane,d1),HOR+d1*(HIT-HOR));cx.lineTo(laneX(it.lane,d2),HOR+d2*(HIT-HOR));cx.stroke();cx.globalAlpha=1}}
+    if(it.hit||p<0||p>1.3)continue;
+    const d=depth(p),y=HOR+d*(HIT-HOR),x=laneX(it.lane,d),r=5+15*d;cx.globalAlpha=p>1?Math.max(0,1-(p-1)*4):1;
+    const gl=cx.createRadialGradient(x,y,0,x,y,r*2);gl.addColorStop(0,col);gl.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=gl;cx.beginPath();cx.arc(x,y,r*2,0,7);cx.fill();
+    cx.fillStyle=col;cx.beginPath();cx.ellipse(x,y,r*1.3,r*.8,0,0,7);cx.fill();
+    cx.fillStyle='#fff';cx.beginPath();cx.ellipse(x,y-r*.15,r*.55,r*.3,0,0,7);cx.fill();cx.globalAlpha=1}
+  // sparks
+  if(fire&&!reduce&&Math.random()<.7){const sg=Math.random()<.5?-1:1,d=.6+Math.random()*.6;parts.push({x:W/2+sg*rw(d),y:HOR+d*(HIT-HOR),vx:sg*20,vy:-140-Math.random()*80,l:.5,c:Math.random()<.5?'#ffc94a':'#ff7a3d'})}
+  parts=parts.filter(q=>(q.l-=dt)>0);
+  for(const q of parts){q.vy+=380*dt;q.x+=q.vx*dt;q.y+=q.vy*dt;cx.globalAlpha=Math.min(1,q.l*2);cx.fillStyle=q.c;cx.fillRect(q.x-2,q.y-2,4,4)}cx.globalAlpha=1;
+  if(live)drawLyrics(t);
+  // pops
+  pops=pops.filter(p=>(p.a+=dt)<.8);
+  for(const p of pops){cx.globalAlpha=1-p.a/.8;cx.fillStyle=p.c;const sc=p.big?1+Math.max(0,.25-p.a)*2:1;cx.font=(p.small?'600 14px "Chakra Petch", sans-serif':`${Math.round((p.big?26:18)*sc)}px Bungee, Impact, sans-serif`);cx.fillText(p.txt,p.x,p.y-p.a*60)}cx.globalAlpha=1;
+  // HUD
+  if(live){
+    const promo=$('promoIn').value.trim(),top=promo?30:0;
+    if(promo){cx.fillStyle='#ff3ea5';cx.fillRect(0,4,W,26);cx.fillStyle='#1a0412';cx.textAlign='center';cx.textBaseline='middle';
+      let pf=13;cx.font=`${pf}px Bungee, Impact, sans-serif`;const pw=cx.measureText(promo).width;if(pw>W-16){pf=Math.max(9,Math.floor(pf*(W-16)/pw));cx.font=`${pf}px Bungee, Impact, sans-serif`}
+      cx.fillText(promo,W/2,17)}
+    cx.save();cx.translate(0,top);
+    cx.fillStyle='rgba(255,255,255,.12)';cx.fillRect(0,0,W,4);cx.fillStyle='#ff3ea5';cx.fillRect(0,0,W*Math.min(1,Math.max(0,t/dur)),4);
+    cx.textAlign='left';cx.textBaseline='top';cx.fillStyle='#ffc94a';cx.font='26px Bungee, Impact, sans-serif';cx.fillText(score.toLocaleString(),14,14);
+    cx.font='600 13px "Chakra Petch", sans-serif';cx.fillStyle='#a99fd0';cx.fillStyle=fire?'#ffc94a':'#a99fd0';cx.fillText(combo>1?`COMBO ×${combo}${fire?'  ON FIRE':''}`:'',16,46);
+    cx.textAlign='right';cx.fillStyle='#f3eefe';cx.fillText(($('artistIn').value||'').toUpperCase(),W-14,18);
+    if(hook){cx.textAlign='center';const sc=1+pulse*.12;cx.save();cx.translate(W/2,HOR+34);cx.scale(sc,sc);cx.font='24px Bungee, Impact, sans-serif';cx.fillStyle='#3ef0ff';cx.shadowColor='#ff3ea5';cx.shadowBlur=16;cx.fillText('HOOK ×2',0,0);cx.restore()}
+    cx.restore();
+  }
+  if(!reduce&&hookFlash>0){cx.fillStyle=`rgba(255,62,165,${hookFlash*.35})`;cx.fillRect(0,0,W,H);hookFlash-=dt*2}
+  if(!reduce&&flash>0){cx.fillStyle=`rgba(255,40,70,${flash*.4})`;cx.fillRect(0,0,W,H);flash-=dt*3}
+  cx.restore();
+}
+
+/* ---------- flow ----------
+   Sound plays through a plain <audio> element: on iPhone it plays even with the ring/silent switch on,
+   and play() is called right inside the tap so the browser allows it. */
+const player=new Audio();player.preload='auto';player.setAttribute('playsinline','');player.src=PRESET.src;
+try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+let userURL='',demoURL='',clock=0,lastCT=-1;
+function wavURL(buf){const d=buf.getChannelData(0),n=d.length,sr=buf.sampleRate,v=new DataView(new ArrayBuffer(44+n*2));
+  const w=(o,str)=>{for(let i=0;i<str.length;i++)v.setUint8(o+i,str.charCodeAt(i))};
+  w(0,'RIFF');v.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++)v.setInt16(44+i*2,Math.max(-1,Math.min(1,d[i]))*32767,true);
+  return URL.createObjectURL(new Blob([v],{type:'audio/wav'}))}
+demoPromise.then(b=>{if(b)demoURL=wavURL(b)});
+
+function start(demo){
+  mode=demo?'demo':userURL?'upload':'preset';
+  const url=mode==='demo'?demoURL:mode==='upload'?userURL:PRESET.src;
+  if(!url){$('trackLbl').textContent='The demo beat is still loading. Tap again in a second.';return}
+  if(player.getAttribute('src')!==url)player.src=url;
+  try{player.currentTime=0}catch(e){}
+  $('trackLbl').textContent='Starting…';
+  player.play().then(()=>{
+    dur=isFinite(player.duration)?player.duration:999;
+    if(mode==='preset'){beatT=PRESET.beats;hooks=PRESET.hooks;spb=.53}
+    else{spb=mode==='demo'?60/92:60/(+$('bpmIn').value||92);grid()}
+    buildChart();buildLines();singIdx=0;parts=[];score=combo=bestCombo=grabbed=missed=0;pops=[];lane=1;lastHook=false;clock=0;lastCT=-1;
+    state='play';$('startOv').hidden=true;$('endOv').hidden=true;
+  }).catch(()=>{$('trackLbl').textContent='Sound was blocked. Tap Play again.'});
+}
+player.addEventListener('ended',()=>{if(state==='play')finish()});
+player.addEventListener('loadedmetadata',()=>{if(state==='play'&&isFinite(player.duration))dur=player.duration});
+function finish(){
+  state='end';player.pause();
+  const name=$('artistIn').value||'Your Artist';
+  $('endArtist').textContent=name;$('endScore').textContent=score.toLocaleString();
+  $('endStats').textContent=`${grabbed} hit · ${missed} missed · best combo ${bestCombo}`;
+  const art=charURL||(mode==='preset'?PRESET.cover:'');
+  $('endTitle').textContent=mode==='preset'?PRESET.title:mode==='demo'?'Demo beat':'Your track';
+  const c=$('cover');c.style.backgroundImage=art?`url("${art}")`:'';c.textContent=art?'':name;
+  $('streamBtn').href=$('linkIn').value||'https://open.spotify.com';
+  $('trackLbl').textContent=mode==='preset'?'Track: Big Michael Michael':'';
+  $('endOv').hidden=false;$('againBtn').focus();
+}
+let last=performance.now();
+function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;let t,live=state==='play';
+  if(live){const ct=player.currentTime;if(ct!==lastCT){clock=ct;lastCT=ct}else if(!player.paused)clock+=dt;
+    t=clock+offset();update(t);if(t>=dur)finish()}else t=now/1000;
+  draw(t,live,dt);requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+
+/* ---------- input ---------- */
+$('playBtn').addEventListener('click',()=>start(false));
+$('demoBtn').addEventListener('click',()=>start(true));
+$('againBtn').addEventListener('click',()=>start(mode==='demo'));
+$('stage').addEventListener('pointerdown',e=>{if(state!=='play')return;e.preventDefault();const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*W;tapLane(x<W/3?0:x<2*W/3?1:2)});
+addEventListener('keydown',e=>{if(state!=='play'||e.repeat)return;const k={ArrowLeft:0,a:0,j:0,ArrowDown:1,ArrowUp:1,s:1,k:1,ArrowRight:2,d:2,l:2}[e.key];if(k!=null){tapLane(k);e.preventDefault()}});
+$('songIn').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;if(userURL)URL.revokeObjectURL(userURL);userURL=URL.createObjectURL(f);
+  $('trackLbl').textContent='Track: '+f.name+' at '+($('bpmIn').value||92)+' BPM';$('playBtn').textContent='Play your track'});
+$('bpmIn').addEventListener('change',()=>{if(userURL)$('trackLbl').textContent=$('trackLbl').textContent.replace(/at \d+ BPM/,'at '+($('bpmIn').value||92)+' BPM')});
+function loadArt(input,cb){input.addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{const img=new Image();img.onload=()=>{let clip=true;try{const c=document.createElement('canvas');c.width=c.height=8;const g=c.getContext('2d');g.drawImage(img,0,0,8,8);clip=g.getImageData(0,0,1,1).data[3]>200}catch(e){}cb(img,r.result,clip)};img.src=r.result};r.readAsDataURL(f)})}
+loadArt($('charIn'),(img,url,clip)=>{charImg=img;charURL=url;charClip=clip});
+loadArt($('charOpenIn'),(img,url,clip)=>{charImgOpen=img;charOpenClip=clip});
+/* the artist's own art, baked in */
+if(PRESET.singer){const a=new Image();a.onload=()=>{if(!charImg)charImg=a};a.src=PRESET.singer}
+if(PRESET.singerOpen){const b=new Image();b.onload=()=>{if(!charImgOpen)charImgOpen=b};b.src=PRESET.singerOpen}
+$('recBtn').addEventListener('click',()=>{document.body.classList.add('rec');scrollTo(0,0)});
+$('exitRec').addEventListener('click',()=>document.body.classList.remove('rec'));
+</script>
+
+</body>
+</html>
